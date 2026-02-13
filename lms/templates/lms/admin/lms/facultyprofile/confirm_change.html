@@ -1,0 +1,46 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; <a href="../">{% translate 'Edit' %}</a>
+    &rsaquo; {% translate 'Confirm' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module" style="max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h1 style="margin-top: 0; color: #444; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            ⚠️ Action Required
+        </h1>
+        
+        <p style="font-size: 1.1em; color: #666;">
+            You are making significant changes to <strong>{{ object }}</strong>'s profile:
+        </p>
+
+        <ul class="messagelist" style="margin: 20px 0; padding: 0;">
+            {% for reason in request.session.confirm_reasons %}
+                <li class="warning" style="list-style: none; background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 12px; margin-bottom: 8px; border-radius: 4px; font-weight: 600;">
+                    {{ reason }}
+                </li>
+            {% endfor %}
+        </ul>
+
+        <p style="margin-bottom: 25px; color: #d9534f; font-weight: bold;">
+            Warning: Changing roles may clear HOD/HR assignments or affect system permissions.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="submit-row" style="background: transparent; border: none; padding: 0; margin: 0; text-align: left;">
+                <input type="submit" value="Yes, Confirm Changes" class="default" style="background: #417690; padding: 10px 20px;">
+                <a href="../change/" class="button cancel-link" style="margin-left: 15px; vertical-align: middle;">Cancel and go back</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+<h2>HOD Leave Report For Department</h2>
+<a href="{% url 'export_pdf' 'department' %}">
+  <button>Download Department PDF</button>
+</a>
+
+<hr>
+
+<form method="get">
+  Month:
+  <select name="month">
+    <option value="">--All--</option>
+    {% for m in "123456789101112"|make_list %}
+      <option value="{{ m }}" {% if month == m %}selected{% endif %}>{{ m }}</option>
+    {% endfor %}
+  </select>
+
+  Year:
+  <input type="number" name="year" value="{{ year }}" placeholder="2026">
+
+  <button type="submit">Filter</button>
+</form>
+
+<hr>
+<h3>Leave Summary</h3>
+
+<ul>
+  {% for item in summary %}
+    <li>{{ item.status }} : {{ item.total }}</li>
+  {% empty %}
+    <li>No data available</li>
+  {% endfor %}
+</ul>
+
+<hr>
+
+<hr>
+<table border="1">
+<tr>
+  <th>Faculty</th>
+  <th>Role</th>
+  <th>Department</th>
+  <th>From</th>
+  <th>To</th>
+  <th>Status</th>
+  <th>Applied On</th>
+</tr>
+
+{% for leave in leaves %}
+<tr>
+  <td>{{ leave.user.username }}</td>
+  <td>{{ leave.user.facultyprofile.get_role_display }}</td>
+  <td>{{ leave.user.facultyprofile.department.name }}</td>
+  <td>{{ leave.from_date }}</td>
+  <td>{{ leave.to_date }}</td>
+  <td>{{ leave.get_status_display }}</td>
+  <td>{{ leave.applied_on|date:"Y-m-d" }}</td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="7">No records found</td>
+</tr>
+{% endfor %}
+</table>
+
+<a href="{% url 'dashboard' %}">
+  <button type="button">⬅ Back to Dashboard</button>
+</a>

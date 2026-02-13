@@ -1,0 +1,21 @@
+<h2>Faculty Dashboard</h2>
+
+<a href="{% url 'faculty_leave_report' %}">
+  <button type="button">My Leave Report</button>
+<br><br>
+
+<a href="{% url 'apply_leave' %}">
+  <button type="button">Apply Leave</button><br><br>
+
+  
+<form method="post" action="{% url 'logout' %}">
+  {% csrf_token %}
+  <button type="submit">Logout</button>
+
+  
+</form>
+{% if request.user.facultyprofile.department and not request.user.facultyprofile.department.hod %}
+  <p style="color: orange;">
+    ⚠ Your department HOD is not assigned yet. Leave requests will remain pending.
+  </p>
+{% endif %}

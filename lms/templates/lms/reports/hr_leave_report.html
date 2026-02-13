@@ -1,0 +1,79 @@
+<h2>HR Leave Report (College Level)</h2>
+<a href="{% url 'export_pdf' 'all' %}">
+  <button>Download College PDF</button>
+</a>
+
+<hr>
+
+<form method="get">
+  Month:
+ <select name="month">
+  <option value="">All Months</option>
+  <option value="1">Jan</option>
+  <option value="2">Feb</option>
+  <option value="3">Mar</option>
+  <option value="4">Apr</option>
+  <option value="5">May</option>
+  <option value="6">Jun</option>
+  <option value="7">Jul</option>
+  <option value="8">Aug</option>
+  <option value="9">Sep</option>
+  <option value="10">Oct</option>
+  <option value="11">Nov</option>
+  <option value="12">Dec</option>
+</select>
+
+
+  Year:
+ <select name="year">
+  <option value="">All Years</option>
+  <option value="2024">2024</option>
+  <option value="2025">2025</option>
+  <option value="2026">2026</option>
+</select>
+  <button type="submit">Filter</button>
+</form>
+<a href="{% url 'dashboard' %}">
+  ← Back to Dashboard
+</a>
+<hr>
+<h3>Leave Summary</h3>
+
+<ul>
+  {% for item in summary %}
+    <li>{{ item.status }} : {{ item.total }}</li>
+  {% empty %}
+    <li>No data available</li>
+  {% endfor %}
+</ul>
+
+<hr>
+<table border="1">
+  <tr>
+    <th>Faculty</th>
+    <th>Role</th>
+    <th>Department</th>
+    <th>From</th>
+    <th>To</th>
+    <th>Status</th>
+    <th>Applied On</th>
+  </tr>
+
+  {% for leave in leaves %}
+  <tr>
+    <td>{{ leave.user.username }}</td>
+    <td>{{ leave.user.facultyprofile.get_role_display }}</td>
+    <td>{{ leave.user.facultyprofile.department.name }}</td>
+    <td>{{ leave.from_date }}</td>
+    <td>{{ leave.to_date }}</td>
+    <td>{{ leave.get_status_display }}</td>
+    <td>{{ leave.applied_on|date:"Y-m-d" }}</td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="7">No records found</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<hr>

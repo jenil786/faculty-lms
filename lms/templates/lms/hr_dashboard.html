@@ -1,0 +1,11 @@
+<h2>HR Dashboard</h2>
+
+
+<a href="{% url 'hr_pending_leaves' %}">Pending Leave Requests</a>
+<br><br>
+<a href="{% url 'hr_leave_report' %}">Overall Leave Report</a>
+<br><br>
+<form method="post" action="{% url 'logout' %}">
+  {% csrf_token %}
+  <button type="submit">Logout</button>
+</form>

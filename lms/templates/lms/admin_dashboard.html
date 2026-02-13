@@ -1,0 +1,42 @@
+
+
+    <!DOCTYPE html>
+    <html>
+        <form method="post" action="{% url 'logout' %}">
+  {% csrf_token %}
+  <button type="submit">Logout</button>
+</form>
+
+    <head>
+        <title>Admin Dashboard</title>
+        <style>
+            .stats-container { display: flex; gap: 20px; }
+            .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+            .btn { background: #007bff; color: white; padding: 10px; text-decoration: none; }
+        </style>
+    </head>
+    <body>
+        <h1>Admin Dashboard</h1>
+        <p>Welcome, {{ request.user.username }}</p>
+
+        <div class="stats-container">
+            <div class="card">
+                <h3>Faculty Members</h3>
+                <p>Total: {{ total_faculty }}</p>
+                <a href="/admin/lms/facultyprofile/" class="btn">Manage Users</a>
+            </div>
+            <div class="card">
+                <h3>Leave Requests</h3>
+                <p>Pending: {{ pending_leaves }}</p>
+                <a href="/admin/lms/leaverequest/" class="btn">View Reports</a>
+            </div>
+        </div>
+
+        <hr>
+        <h3>Quick Actions</h3>
+        <ul>
+            <li><a href="{% url 'home' %}">Back to Home</a></li>
+            <li><a href="/admin/auth/user/add/">Add New System User</a></li>
+        </ul>
+    </body>
+    </html>

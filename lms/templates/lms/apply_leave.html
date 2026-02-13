@@ -1,0 +1,26 @@
+<h2>Apply Leave</h2>
+
+<form method="post">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div style="color:red;">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <label>From Date:</label><br>
+  {{ form.from_date }}<br><br>
+
+  <label>To Date:</label><br>
+  {{ form.to_date }}<br><br>
+
+  <label>Reason:</label><br>
+  {{ form.reason }}<br><br>
+
+  <button type="submit">Submit Leave</button>
+</form>
+
+
+<a href="{% url 'dashboard' %}">
+  <button type="button">⬅ Back to Dashboard</button>

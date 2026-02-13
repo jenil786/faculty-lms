@@ -1,0 +1,40 @@
+<h2>HOD – Pending Leave Requests</h2>
+
+<table border="1">
+<tr>
+  <th>Faculty</th>
+  <th>From</th>
+  <th>To</th>
+  <th>Reason</th>
+  <th>Action</th>
+</tr>
+
+{% for leave in leaves %}
+<tr>
+  <td>{{ leave.user.username }}</td>
+  <td>{{ leave.from_date }}</td>
+  <td>{{ leave.to_date }}</td>
+  <td>{{ leave.reason }}</td>
+  <td>
+    <form method="post" action="{% url 'hod_approve_leave' leave.id %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit">Approve</button>
+    </form>
+
+    <form method="post" action="{% url 'hod_reject_leave' leave.id %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit">Reject</button>
+    </form>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="5">No pending leaves</td>
+</tr>
+{% endfor %}
+</table>
+<a href="{% url 'dashboard' %}">
+  <button type="button">⬅ Back to Dashboard</button>
+</a>
+
+

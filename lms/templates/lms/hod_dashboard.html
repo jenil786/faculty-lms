@@ -1,0 +1,25 @@
+<h2>HOD Dashboard</h2>
+
+<a href="{% url 'hod_pending_leaves' %}">Pending Faculty Leaves</a><br>
+<br>
+<a href="{% url 'hod_leave_report' %}">Department Leave Report</a>
+<br><br>
+<!-- Apply Leave -->
+<a href="{% url 'apply_leave' %}">
+  <button type="button">Apply Leave</button>
+</a>
+
+<br><br>
+
+<!-- My Leave Report -->
+<a href="{% url 'my_leaves' %}">
+  <button type="button">My Leave Report</button>
+</a>
+
+<br><br>
+
+<!-- Logout -->
+<form method="post" action="{% url 'logout' %}">
+  {% csrf_token %}
+  <button type="submit">Logout</button>
+</form>
