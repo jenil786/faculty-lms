@@ -1,21 +1,39 @@
-<h2>Faculty Dashboard</h2>
+{% extends "base.html" %}
+{% block content %}
 
-<a href="{% url 'faculty_leave_report' %}">
-  <button type="button">My Leave Report</button>
-<br><br>
+<div class="mb-4">
+    <h3>Welcome, {{ request.user.first_name }}</h3>
+    <p class="text-muted">Faculty Leave Management Dashboard</p>
+</div>
 
-<a href="{% url 'apply_leave' %}">
-  <button type="button">Apply Leave</button><br><br>
+<div class="row g-4">
 
-  
-<form method="post" action="{% url 'logout' %}">
-  {% csrf_token %}
-  <button type="submit">Logout</button>
+    <!-- Apply Leave -->
+    <div class="col-md-4 col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center">
+                <h5 class="card-title">Apply Leave</h5>
+                <p class="text-muted">Submit new leave request</p>
+                <a href="{% url 'apply_leave' %}" class="btn btn-primary w-100">
+                    Apply Now
+                </a>
+            </div>
+        </div>
+    </div>
 
-  
-</form>
-{% if request.user.facultyprofile.department and not request.user.facultyprofile.department.hod %}
-  <p style="color: orange;">
-    ⚠ Your department HOD is not assigned yet. Leave requests will remain pending.
-  </p>
-{% endif %}
+    <!-- Leave History -->
+    <div class="col-md-4 col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center">
+                <h5 class="card-title">Leave History</h5>
+                <p class="text-muted">Track your leave requests</p>
+                <a href="{% url 'leave_history' %}" class="btn btn-success w-100">
+                    View History
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
