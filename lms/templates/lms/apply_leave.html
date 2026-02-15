@@ -1,34 +1,27 @@
 <h2>Apply Leave</h2>
 
-<form method="POST" class="card p-4 shadow">
-    {% csrf_token %}
+<form method="post">
+  {% csrf_token %}
 
-    <div class="mb-3">
-        <label class="form-label">Start Date</label>
-        {{ form.start_date }}
+  {% if form.non_field_errors %}
+    <div style="color:red;">
+      {{ form.non_field_errors }}
     </div>
+  {% endif %}
 
-    <div class="mb-3">
-        <label class="form-label">End Date</label>
-        {{ form.end_date }}
-    </div>
+  <label>From Date:</label><br>
+  {{ form.from_date }}<br><br>
 
-    <div class="mb-3">
-        <label class="form-label">Leave Type</label>
-        {{ form.leave_type }}
-    </div>
+  <label>To Date:</label><br>
+  {{ form.to_date }}<br><br>
 
-    <div class="mb-3">
-        <label class="form-label">Reason</label>
-        {{ form.reason }}
-    </div>
+  <label>Reason:</label><br>
+  {{ form.reason }}<br><br>
 
-    <button type="submit" class="btn btn-primary w-100">
-        Submit Leave Request
-    </button>
-
+  <button type="submit">Submit Leave</button>
 </form>
 
 
 <a href="{% url 'dashboard' %}">
   <button type="button">⬅ Back to Dashboard</button>
+</a>
