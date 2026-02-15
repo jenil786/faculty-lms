@@ -12,7 +12,8 @@
   {% csrf_token %}
   <button type="submit">Logout</button>
 
-  
+  {% extends "lms/base.html" %}
+
 </form>
 {% if request.user.facultyprofile.department and not request.user.facultyprofile.department.hod %}
   <p style="color: orange;">
