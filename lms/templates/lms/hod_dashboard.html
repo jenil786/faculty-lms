@@ -1,25 +1,191 @@
-<h2>HOD Dashboard</h2>
+{% extends 'lms/base.html' %}
 
-<a href="{% url 'hod_pending_leaves' %}">Pending Faculty Leaves</a><br>
-<br>
-<a href="{% url 'hod_leave_report' %}">Department Leave Report</a>
-<br><br>
-<!-- Apply Leave -->
-<a href="{% url 'apply_leave' %}">
-  <button type="button">Apply Leave</button>
-</a>
+{% block content %}
+<style>
+    /* Premium Theme Overrides - Adaptive Header */
+    [data-bs-theme="dark"] {
+        --card-bg-hover: #1e293b;
+        --title-color: #f8fafc; /* White */
+        --accent-shadow: rgba(0, 0, 0, 0.4);
+    }
+    [data-bs-theme="light"] {
+        --card-bg-hover: #ffffff;
+        --title-color: #0f172a; /* Black */
+        --accent-shadow: rgba(0, 0, 0, 0.05);
+    }
 
-<br><br>
+    .dashboard-title {
+        color: var(--title-color) !important;
+        letter-spacing: -1px;
+    }
+    
+    .card {
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 20px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden;
+    }
 
-<!-- My Leave Report -->
-<a href="{% url 'my_leaves' %}">
-  <button type="button">My Leave Report</button>
-</a>
+    .hover-effect:hover {
+        transform: translateY(-10px);
+        background-color: var(--card-bg-hover) !important;
+        box-shadow: 0 20px 25px -5px var(--accent-shadow) !important;
+    }
 
-<br><br>
+    .icon-circle {
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        border-radius: 15px;
+        transition: 0.3s;
+    }
 
-<!-- Logout -->
-<form method="post" action="{% url 'logout' %}">
-  {% csrf_token %}
-  <button type="submit">Logout</button>
-</form>
+    .hover-effect:hover .icon-circle {
+        transform: rotate(10deg) scale(1.1);
+    }
+
+    .btn-premium {
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 10px;
+    }
+
+    /* --- UNIQUE CARD COLORS (Referencing HR Style) --- */
+
+    /* 1. Pending Approvals - Primary Blue */
+    .card-pending { border-bottom: 4px solid #0d6efd !important; }
+    .card-pending:hover { border-color: #0d6efd !important; }
+    .icon-pending { background: rgba(13, 110, 253, 0.1); color: #0d6efd; }
+    .btn-pending { background-color: #0d6efd !important; color: white !important; border: none; }
+
+    /* 2. Department Report - Success Green */
+    .card-report { border-bottom: 4px solid #198754 !important; }
+    .card-report:hover { border-color: #198754 !important; }
+    .icon-report { background: rgba(25, 135, 84, 0.1); color: #198754; }
+    .btn-report { border: 2px solid #198754 !important; color: #198754 !important; background: transparent; }
+    .btn-report:hover { background: #198754 !important; color: white !important; }
+
+    /* 3. Apply Leave - Info/Cyan */
+    .card-apply { border-bottom: 4px solid #0dcaf0 !important; }
+    .card-apply:hover { border-color: #0dcaf0 !important; }
+    .icon-apply { background: rgba(13, 202, 240, 0.1); color: #0dcaf0; }
+    .btn-apply { background-color: #0dcaf0 !important; color: #000 !important; border: none; }
+
+    /* 4. Leave History - Changed from Orange to Yellow (#ffc107) */
+    .card-history { border-bottom: 4px solid #ffc107 !important; }
+    .card-history:hover { border-color: #ffc107 !important; }
+    .icon-history { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+    .btn-history { border: 2px solid #ffc107 !important; color: #ffc107 !important; background: transparent; }
+    .btn-history:hover { background: #ffc107 !important; color: #000 !important; }
+
+    /* Section Divider Styling */
+    .section-divider {
+        border-left: 5px solid #cbd5e1;
+        padding-left: 15px;
+        margin-bottom: 20px;
+        color: var(--title-color);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    /* Balance Pills */
+    .balance-pill {
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 50px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid;
+        font-size: 0.85rem;
+    }
+    .pill-cl { color: #0d6efd; border-color: #0d6efd; background: rgba(13, 110, 253, 0.1); }
+    .pill-ml { color: #0dcaf0; border-color: #0dcaf0; background: rgba(13, 202, 240, 0.1); }
+    .pill-el { color: #ffc107; border-color: #ffc107; background: rgba(255, 193, 7, 0.1); }
+    .pill-total { color: var(--title-color); border-color: var(--title-color); background: rgba(100, 116, 139, 0.1); }
+</style>
+
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="dashboard-title fw-bold">HOD Dashboard</h2>
+        <p class="text-muted small">Department Management & Personal Leave</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+    {% if balance %}
+    <div class="d-flex flex-wrap justify-content-md-end gap-2 mt-2">
+        <span class="balance-pill pill-cl">CL: {{ balance.cl_balance|add:balance.cl_used_negative }}</span>
+        <span class="balance-pill pill-ml">ML: {{ balance.ml_balance|add:balance.ml_used_negative }}</span>
+        <span class="balance-pill pill-el">EL: {{ balance.el_balance|add:balance.el_used_negative }}</span>
+        <span class="balance-pill pill-total">Total: {{ balance.remaining_leaves }}</span>
+    </div>
+    {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-12">
+        <h5 class="section-divider" style="border-color: #0d6efd;">Department Administration</h5>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 hover-effect card-pending">
+            <div class="card-body p-4 text-center">
+                <div class="icon-circle icon-pending">
+                    <i class="bi bi-shield-check fs-2"></i>
+                </div>
+                <h4 class="fw-bold">Pending Approvals</h4>
+                <p class="text-muted small mb-4">Review faculty leave requests for your department.</p>
+                <a href="{% url 'hod_pending_leaves' %}" class="btn btn-pending btn-premium w-100 stretched-link">Review Now</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 hover-effect card-report">
+            <div class="card-body p-4 text-center">
+                <div class="icon-circle icon-report">
+                    <i class="bi bi-file-earmark-bar-graph fs-2"></i>
+                </div>
+                <h4 class="fw-bold">Department Report</h4>
+                <p class="text-muted small mb-4">View analytics and history for all staff.</p>
+                <a href="{% url 'hod_leave_report' %}" class="btn btn-report btn-premium w-100 stretched-link">View Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <h5 class="section-divider" style="border-color: #0dcaf0;">My Personal Leave</h5>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 hover-effect card-apply">
+            <div class="card-body p-4 text-center">
+                <div class="icon-circle icon-apply">
+                    <i class="bi bi-plus-circle fs-2"></i>
+                </div>
+                <h4 class="fw-bold">Apply for Leave</h4>
+                <p class="text-muted small mb-4">Submit a new request for yourself.</p>
+                <a href="{% url 'apply_leave' %}" class="btn btn-apply btn-premium w-100 stretched-link">Create Request</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 hover-effect card-history">
+            <div class="card-body p-4 text-center">
+                <div class="icon-circle icon-history">
+                    <i class="bi bi-clock-history fs-2"></i>
+                </div>
+                <h4 class="fw-bold">My Leave History</h4>
+                <p class="text-muted small mb-4">Check the status of your submitted requests.</p>
+                <a href="{% url 'my_leaves' %}" class="btn btn-history btn-premium w-100 stretched-link">Check Status</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

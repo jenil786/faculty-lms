@@ -1,42 +1,150 @@
+{% extends 'lms/base.html' %}
 
+{% block content %}
+<style>
+    /* Premium Theme Overrides */
+    [data-bs-theme="dark"] {
+        --card-bg-hover: #1e293b;
+        --title-color: #f8fafc;
+        --admin-icon-bg: rgba(253, 184, 19, 0.1); 
+    }
+    [data-bs-theme="light"] {
+        --card-bg-hover: #ffffff;
+        --title-color: #0f172a;
+        --admin-icon-bg: rgba(128, 0, 64, 0.05);
+    }
 
-    <!DOCTYPE html>
-    <html>
-        <form method="post" action="{% url 'logout' %}">
-  {% csrf_token %}
-  <button type="submit">Logout</button>
-</form>
+    /* Hide the redundant Dashboard link in header */
+    .navbar-nav .nav-link[href*="dashboard"], #dashboard-nav-link { 
+        display: none !important; 
+    }
 
-    <head>
-        <title>Admin Dashboard</title>
-        <style>
-            .stats-container { display: flex; gap: 20px; }
-            .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
-            .btn { background: #007bff; color: white; padding: 10px; text-decoration: none; }
-        </style>
-    </head>
-    <body>
-        <h1>Admin Dashboard</h1>
-        <p>Welcome, {{ request.user.username }}</p>
+    .dashboard-title { color: var(--title-color) !important; letter-spacing: -0.5px; }
+    .text-primary-ssit { color: var(--ssit-maroon) !important; }
+    
+    .card {
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 20px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
 
-        <div class="stats-container">
-            <div class="card">
-                <h3>Faculty Members</h3>
-                <p>Total: {{ total_faculty }}</p>
-                <a href="/admin/lms/facultyprofile/" class="btn">Manage Users</a>
-            </div>
-            <div class="card">
-                <h3>Leave Requests</h3>
-                <p>Pending: {{ pending_leaves }}</p>
-                <a href="/admin/lms/leaverequest/" class="btn">View Reports</a>
+    .icon-box-admin {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background-color: var(--admin-icon-bg) !important;
+    }
+
+    .btn-premium { border-radius: 12px; font-weight: 600; border: none !important; }
+    .btn-maroon { background-color: var(--ssit-maroon) !important; color: #ffffff !important; }
+    .btn-gold { background-color: var(--ssit-gold) !important; color: #000000 !important; }
+    .btn-teal { background-color: #14b8a6 !important; color: #ffffff !important; }
+    .btn-indigo { background-color: #6366f1 !important; color: #ffffff !important; }
+    .btn-success-ssit { background-color: #10b981 !important; color: #ffffff !important; }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold dashboard-title">System Administration</h2>
+        <p class="text-muted">Welcome, <span class="text-primary-ssit fw-bold">{{ request.user.username }}</span>. You have full system access.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-box-admin me-3"><i class="bi bi-people-fill text-primary-ssit fs-4"></i></div>
+                    <h5 class="fw-bold mb-0 dashboard-title">Faculty Profiles</h5>
+                </div>
+                <a href="/admin/lms/facultyprofile/" class="btn btn-maroon w-100 btn-premium shadow-sm">
+                    <i class="bi bi-person-gear me-2"></i>Manage Profiles
+                </a>
             </div>
         </div>
+    </div>
 
-        <hr>
-        <h3>Quick Actions</h3>
-        <ul>
-            <li><a href="{% url 'home' %}">Back to Home</a></li>
-            <li><a href="/admin/auth/user/add/">Add New System User</a></li>
-        </ul>
-    </body>
-    </html>
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-box-admin me-3"><i class="bi bi-key-fill text-teal fs-4" style="color:#14b8a6;"></i></div>
+                    <h5 class="fw-bold mb-0 dashboard-title">Password Requests</h5>
+                </div>
+                <a href="/admin/lms/passwordrequest/" class="btn btn-teal w-100 btn-premium shadow-sm">
+                    <i class="bi bi-shield-lock me-2"></i>Verify Requests
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-box-admin me-3"><i class="bi bi-calculator-fill text-indigo fs-4" style="color:#6366f1;"></i></div>
+                    <h5 class="fw-bold mb-0 dashboard-title">Leave Balances</h5>
+                </div>
+                <a href="/admin/lms/leavebalance/" class="btn btn-indigo w-100 btn-premium shadow-sm">
+                    <i class="bi bi-calendar-check me-2"></i>Adjust Quotas
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-box-admin me-3"><i class="bi bi-envelope-paper-fill text-warning fs-4"></i></div>
+                    <h5 class="fw-bold mb-0 dashboard-title">System Reports</h5>
+                </div>
+                <a href="/admin/lms/leaverequest/" class="btn btn-gold w-100 btn-premium shadow-sm">
+                    <i class="bi bi-file-earmark-bar-graph me-2"></i>View All Leaves
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-box-admin me-3"><i class="bi bi-person-plus-fill text-success fs-4"></i></div>
+                    <h5 class="fw-bold mb-0 dashboard-title">User Accounts</h5>
+                </div>
+                <a href="/admin/auth/user/add/" class="btn btn-success-ssit w-100 btn-premium shadow-sm">
+                    <i class="bi bi-plus-circle me-2"></i>Create New User
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm overflow-hidden">
+    <div class="card-header bg-transparent py-3 border-bottom border-light">
+        <h5 class="mb-0 fw-bold dashboard-title">
+            <i class="bi bi-lightning-charge-fill text-danger me-2"></i>Quick Actions
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            <a href="{% url 'login' %}" class="list-group-item p-4 d-flex align-items-center border-0">
+                <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3">
+                    <i class="bi bi-box-arrow-in-right text-info fs-5"></i>
+                </div>
+                <div>
+                    <div class="fw-bold dashboard-title">Go to Faculty Login</div>
+                    <small class="text-muted">Switch to the main faculty interface.</small>
+                </div>
+                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

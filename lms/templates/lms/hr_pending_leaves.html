@@ -1,40 +1,272 @@
-<h2>HR – Pending Leave Requests</h2>
+{% extends 'lms/base.html' %}
 
-<table border="1">
-<tr>
-  <th>Faculty</th>
-  <th>Role</th>
-  <th>From</th>
-  <th>To</th>
-  <th>Reason</th>
-  <th>Action</th>
-</tr>
+{% block content %}
+<style>
+    /* Global Theme Integration */
+    body { 
+        background-color: var(--bg-body) !important; 
+        color: var(--text-main);
+        transition: background-color 0.3s, color 0.3s;
+    }
 
-{% for leave in leaves %}
-<tr>
-  <td>{{ leave.user.username }}</td>
-  <td>{{ leave.user.facultyprofile.get_role_display }}</td>
-  <td>{{ leave.from_date }}</td>
-  <td>{{ leave.to_date }}</td>
-  <td>{{ leave.reason }}</td>
-  <td>
-    <form method="post" action="{% url 'hr_approve_leave' leave.id %}" style="display:inline;">
-      {% csrf_token %}
-      <button type="submit">Approve</button>
-    </form>
+    h2, h5 { color: var(--text-main) !important; }
 
-    <form method="post" action="{% url 'hr_reject_leave' leave.id %}" style="display:inline;">
-      {% csrf_token %}
-      <button type="submit">Reject</button>
-    </form>
-  </td>
-</tr>
-{% empty %}
-<tr>
-  <td colspan="6">No pending leaves</td>
-</tr>
-{% endfor %}
-</table>
-<a href="{% url 'dashboard' %}">
-  <button type="button">⬅ Back to Dashboard</button>
-</a>
+    .card { 
+        background-color: var(--bg-card) !important; 
+        border: 1px solid var(--input-border) !important; 
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .card-header { 
+        background-color: var(--header-bg) !important; 
+        border-bottom: 1px solid var(--input-border) !important; 
+    }
+
+    .stat-card {
+        border: 1px solid var(--input-border);
+        transition: none !important;
+    }
+    .stat-card:hover {
+        transform: none !important;
+    }
+
+    .filter-box {
+        background-color: var(--bg-card);
+        border-radius: 12px;
+        border: 1px solid var(--input-border);
+    }
+
+    .table { color: var(--text-main) !important; }
+    .table-light { 
+        background-color: rgba(0,0,0,0.03) !important; 
+        color: var(--text-main) !important;
+    }
+    [data-bs-theme="dark"] .table-light {
+        background-color: rgba(255,255,255,0.05) !important;
+    }
+    .table td, .table th { border-color: var(--input-border) !important; }
+    .table thead th {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .btn-sm { font-weight: 600; font-size: 0.8rem; }
+    .type-badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 6px;
+    }
+
+    .btn-light {
+        background-color: var(--bg-card) !important;
+        border-color: var(--input-border) !important;
+        color: var(--text-main) !important;
+    }
+
+   /* Overlap Alert Styling */
+    .overlap-warning {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: block;
+        align-items: center;
+        gap: 4px;
+        margin-top: 6px;
+        background-color: rgba(255, 193, 7, 0.2); /* Slightly deeper yellow for visibility */
+        color: #4d3d02; /* Deep dark brown/black for the main label */
+        border: 1px solid rgba(255, 193, 7, 0.4);
+        line-height: 1.4;
+        font-weight: 600;
+    }
+
+    /* Target the names span specifically for visibility in Light Theme */
+    .overlap-warning span {
+        color: #212529 !important; /* Solid Black/Dark Grey for names */
+        font-weight: 700;
+    }
+
+    [data-bs-theme="dark"] .overlap-warning {
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+    }
+
+    /* Keep text light in Dark Theme */
+    [data-bs-theme="dark"] .overlap-warning span {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+</style>
+
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="fw-bold">HR Final Approvals</h2>
+        <p class="text-muted">Reviewing leave requests cleared by Department Heads.</p>
+    </div>
+    
+</div>
+
+<div class="row mb-4 g-3">
+    <div class="col-md-3">
+        <div class="card stat-card shadow-sm border-0 text-center py-3">
+            <small class="text-muted text-uppercase fw-bold">Pending Review</small>
+            <h2 class="mb-0 fw-bold text-primary">{{ leaves|length }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="card filter-box border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">FACULTY NAME</label>
+                <input type="text" name="faculty_query" class="form-control form-control-sm" 
+                       placeholder="Search faculty..." value="{{ faculty_query }}"
+                       style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">DEPARTMENT</label>
+                <select name="dept" class="form-select form-select-sm" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                    <option value="">All Departments</option>
+                    <option value="Information Technology" {% if dept_filter == 'Information Technology' %}selected{% endif %}>Information Technology</option>
+                    <option value="Computer Science" {% if dept_filter == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                    <option value="Mechanical" {% if dept_filter == 'Mechanical' %}selected{% endif %}>Mechanical</option>
+                    <option value="Civil" {% if dept_filter == 'Civil' %}selected{% endif %}>Civil</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted">STATUS</label>
+                <select name="status" class="form-select form-select-sm" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending HR</option>
+                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm px-4 w-100 shadow-sm">
+                        <i class="bi bi-funnel me-1"></i> Filter Records
+                    </button>
+                    <a href="{% url 'hr_pending_leaves' %}" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-primary"></i>Final Review Queue</h5>
+        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">Final Stage</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Faculty Member</th>
+                    <th>Role & Department</th>
+                    <th>Duration</th>
+                    <th class="text-center">Leave Type</th> 
+                    <th>Reason</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+           <tbody>
+                {% for leave in leaves %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-primary">{{ leave.user.username }}</div>
+                            <small class="text-muted">ID: #{{ leave.user.id }}</small>
+                        </td>
+                        <td>
+                            <div class="small fw-bold">{{ leave.user.facultyprofile.get_role_display }}</div>
+                            <div class="small text-muted">{{ leave.user.facultyprofile.department }}</div>
+                        </td>
+                        <td>
+                            <div class="small fw-semibold text-primary">
+                                <i class="bi bi-calendar3 me-1"></i> {{ leave.from_date }}
+                            </div>
+                            <div class="small fw-semibold text-secondary">
+                                <i class="bi bi-arrow-right me-1"></i> {{ leave.to_date }}
+                            </div>
+
+                            {% if leave.overlap_count > 0 %}
+                            <div class="overlap-warning">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <strong>{{ leave.overlap_count }} others off:</strong> 
+                                <span class="text-white-50">{{ leave.overlapping_names }}</span>
+                            </div>
+                            {% endif %}
+                        </td>   
+                        <td class="text-center">
+                            <span class="type-badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                {{ leave.leave_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-truncate d-inline-block text-muted" style="max-width: 180px;" title="{{ leave.reason }}">
+                                {{ leave.reason }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                <form method="post" action="{% url 'hr_approve_leave' leave.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm px-3 rounded-pill shadow-sm">
+                                        <i class="bi bi-check-lg me-1"></i> Final Approve
+                                    </button>
+                                </form>
+
+                                <button type="button" class="btn btn-outline-danger btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#rejectModal{{ leave.id }}">
+                                    <i class="bi bi-x-lg me-1"></i> Reject
+                                </button>
+                            </div>
+
+                            <div class="modal fade" id="rejectModal{{ leave.id }}" tabindex="-1" aria-labelledby="rejectModalLabel{{ leave.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content" style="background-color: var(--bg-card); color: var(--text-main);">
+                                        <div class="modal-header border-bottom border-secondary border-opacity-25">
+                                            <h5 class="modal-title" id="rejectModalLabel{{ leave.id }}">Reject Leave Request</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form method="post" action="{% url 'hr_reject_leave' leave.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body text-start">
+                                                <p>Are you sure you want to reject the leave for <strong>{{ leave.user.username }}</strong>?</p>
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold">Reason for Rejection</label>
+                                                    <textarea name="remarks" class="form-control" rows="3" required placeholder="Provide a reason for rejection..." style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-top border-secondary border-opacity-25">
+                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-danger">Confirm Rejection</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="bi bi-check-circle text-success display-4 d-block mb-3 opacity-50"></i>
+                            <h4 class="fw-bold">All Caught Up!</h4>
+                            <p class="text-muted">There are no more pending approvals for HR at this time.</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'hr_dashboard' %}" class="btn btn-light shadow-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to HR Dashboard
+    </a>
+</div>
+{% endblock %}

@@ -6,16 +6,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from pathlib import Path
-
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-
-DEBUG = os.getenv("DEBUG") == "True"
-ALLOWED_HOSTS = ["faculty-lms.onrender.com"]
-"""ALLOWED_HOSTS = ['.onrender.com']"""
-
+DEBUG = True
+"""DEBUG = os.getenv("DEBUG") == "False"""
+# --- ALLOWED_HOSTS FIX ---
+# We combine all possible hosts into ONE list
+ALLOWED_HOSTS = [
+    '127.0.0.1', 
+    'localhost', 
+    'faculty-lms.onrender.com', 
+    '.onrender.com'
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,7 +31,6 @@ INSTALLED_APPS = [
     'lms',
     'reports',
     'faculty.apps.FacultyConfig',
-
 ]
 
 MIDDLEWARE = [
@@ -44,10 +46,17 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'lms_project.urls'
-STATIC_URL = "/static/"
+
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Add this so Django looks into your manual static folders
+STATICFILES_DIRS = [
+    BASE_DIR / "staticfiles", # This tells Django to look where your logo is
+]
 
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "production_static" # Keep the collectstatic output separate
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -65,24 +74,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'lms_project.wsgi.application'
 
-"""DATABASES = {
+DATABASES = {
     "default": dj_database_url.config(
         default="sqlite:///" + str(BASE_DIR / "db.sqlite3"),
         conn_max_age=600
     )
 }
-"""
-
-# DATABASE (Production Safe)
-
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -98,33 +95,41 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_TZ = True
-
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/dashboard/'
+LOGIN_REDIRECT_URL = '/dashboard/'  
 LOGOUT_REDIRECT_URL = '/login/'
-"""SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')"""
+# Force these to False for local development
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
 
-# HTTPS SECURITY
 
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = True
+# =========================
+# Email Configuration
+# =========================
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# 1. Put your real Gmail address here
+EMAIL_HOST_USER = 'powerover994@gmail.com' 
 
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = "DENY"
+# 2. Put your REAL 16-character App Password here (No spaces)
+EMAIL_HOST_PASSWORD = 'hdefrvtiawziynvr' 
 
+# 3. Match this to your EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = 'SSIT LMS Admin <powerover994@gmail.com>'
+
+EMAIL_TIMEOUT = 10

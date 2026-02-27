@@ -1,22 +1,146 @@
-<h2>Faculty Dashboard</h2>
+{% extends 'lms/base.html' %}
 
-<a href="{% url 'faculty_leave_report' %}">
-  <button type="button">My Leave Report</button>
-<br><br>
+{% block content %}
+<style>
+    /* Theme-specific Overrides for Premium Feel */
+    [data-bs-theme="dark"] {
+        --card-bg-hover: #1e293b;
+        --title-color: #f8fafc;
+        --accent-shadow: rgba(0, 0, 0, 0.4);
+    }
+    [data-bs-theme="light"] {
+        --card-bg-hover: #ffffff;
+        --title-color: #0f172a;
+        --accent-shadow: rgba(0, 0, 0, 0.05);
+    }
 
-<a href="{% url 'apply_leave' %}">
-  <button type="button">Apply Leave</button><br><br>
+    .dashboard-title {
+        color: var(--title-color) !important;
+        letter-spacing: -1px;
+    }
+    
+    .card {
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 20px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
 
-  
-<form method="post" action="{% url 'logout' %}">
-  {% csrf_token %}
-  <button type="submit">Logout</button>
+    .hover-effect:hover {
+        transform: translateY(-10px);
+        background-color: var(--card-bg-hover) !important;
+        box-shadow: 0 20px 25px -5px var(--accent-shadow) !important;
+        border-color: var(--text-primary) !important;
+    }
 
-  {% extends "lms/base.html" %}
+    /* Icon Styling */
+    .icon-circle {
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        border-radius: 15px;
+        transition: 0.3s;
+    }
 
-</form>
+    .hover-effect:hover .icon-circle {
+        transform: rotate(10deg) scale(1.1);
+    }
+
+    .card-title {
+        color: var(--title-color);
+    }
+
+    /* --- UPDATED CONSISTENT BADGE STYLES --- */
+    .balance-pill {
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 50px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid;
+        font-size: 0.85rem;
+    }
+    .pill-cl { color: #0d6efd; border-color: #0d6efd; background: rgba(13, 110, 253, 0.1); }
+    .pill-ml { color: #0dcaf0; border-color: #0dcaf0; background: rgba(13, 202, 240, 0.1); }
+    .pill-el { color: #ffc107; border-color: #ffc107; background: rgba(255, 193, 7, 0.1); }
+    .pill-total { 
+        color: var(--text-main); 
+        border-color: var(--text-main); 
+        background: rgba(100, 116, 139, 0.1); 
+    }
+</style>
+
+<div class="row mb-4 align-items-center">
+    <div class="col-md-7">
+        <h2 class="fw-bold dashboard-title">Faculty Dashboard</h2>
+        <p class="text-muted">Personal Leave Management System</p>
+    </div>
+    <div class="col-md-5 text-md-end">
+    {% if balance %}
+    <div class="d-flex flex-wrap justify-content-md-end gap-2">
+        <span class="balance-pill pill-cl">
+            CL: <strong>{{ balance.cl_balance|add:balance.cl_used_negative }}</strong>
+        </span>
+        
+        <span class="balance-pill pill-ml">
+            ML: <strong>{{ balance.ml_balance|add:balance.ml_used_negative }}</strong>
+        </span>
+        
+        <span class="balance-pill pill-el">
+            EL: <strong>{{ balance.el_balance|add:balance.el_used_negative }}</strong>
+        </span>
+
+        <span class="balance-pill pill-total shadow-sm">
+            <i class="bi bi-wallet2 me-2"></i>Total: <strong>{{ balance.remaining_leaves }}</strong>
+        </span>
+    </div>
+    {% endif %}
+    </div>
+</div>
+
 {% if request.user.facultyprofile.department and not request.user.facultyprofile.department.hod %}
-  <p style="color: orange;">
-    ⚠ Your department HOD is not assigned yet. Leave requests will remain pending.
-  </p>
+<div class="alert alert-warning d-flex align-items-center shadow-sm border-0 py-3 mb-4" style="border-radius: 15px;" role="alert">
+    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 me-3 fs-4"></i>
+    <div>
+        <strong class="d-block">HOD Not Assigned</strong>
+        <span class="small opacity-75">Requests will remain "Pending" until an HOD is assigned to {{ request.user.facultyprofile.department.name }}.</span>
+    </div>
+</div>
 {% endif %}
+
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm hover-effect">
+            <div class="card-body p-5 text-center">
+                <div class="icon-circle bg-primary bg-opacity-10">
+                    <i class="bi bi-file-earmark-plus-fill text-primary fs-2"></i>
+                </div>
+                <h4 class="card-title fw-bold">Apply for Leave</h4>
+                <p class="text-muted small mb-4 px-3">Submit a new request for medical, casual, or personal leave.</p>
+                <a href="{% url 'apply_leave' %}" class="btn btn-primary btn-lg w-100 stretched-link shadow-sm" style="border-radius: 12px;">
+                    Create Request
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm hover-effect">
+            <div class="card-body p-5 text-center">
+                <div class="icon-circle bg-success bg-opacity-10">
+                    <i class="bi bi-journal-check text-success fs-2"></i>
+                </div>
+                <h4 class="card-title fw-bold">My Leave History</h4>
+                <p class="text-muted small mb-4 px-3">View your previous submissions and track approval status.</p>
+                <a href="{% url 'my_leaves' %}" class="btn btn-outline-success btn-lg w-100 stretched-link" style="border-radius: 12px; border-width: 2px;">
+                    Check Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

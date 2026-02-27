@@ -1,11 +1,227 @@
-<h2>HR Dashboard</h2>
+{% extends 'lms/base.html' %}
 
+{% block content %}
+<style>
+    /* Premium Theme Overrides */
+    [data-bs-theme="dark"] {
+        --card-bg-hover: #1e293b;
+        --title-color: #f8fafc;
+        --accent-shadow: rgba(0, 0, 0, 0.4);
+        --chart-grid: rgba(255, 255, 255, 0.1);
+    }
+    [data-bs-theme="light"] {
+        --card-bg-hover: #ffffff;
+        --title-color: #0f172a;
+        --accent-shadow: rgba(0, 0, 0, 0.05);
+        --chart-grid: rgba(0, 0, 0, 0.05);
+    }
 
-<a href="{% url 'hr_pending_leaves' %}">Pending Leave Requests</a>
-<br><br>
-<a href="{% url 'hr_leave_report' %}">Overall Leave Report</a>
-<br><br>
-<form method="post" action="{% url 'logout' %}">
-  {% csrf_token %}
-  <button type="submit">Logout</button>
-</form>
+    .dashboard-title {
+        color: var(--title-color) !important;
+        letter-spacing: -1px;
+    }
+    
+    .card {
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 20px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .hover-effect:hover {
+        transform: translateY(-10px);
+        background-color: var(--card-bg-hover) !important;
+        box-shadow: 0 20px 25px -5px var(--accent-shadow) !important;
+        border-color: var(--text-primary) !important;
+    }
+
+    .icon-circle {
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        border-radius: 15px;
+        transition: 0.3s;
+    }
+
+    .hover-effect:hover .icon-circle {
+        transform: rotate(10deg) scale(1.1);
+    }
+
+    .card-title {
+        color: var(--title-color);
+    }
+
+    .btn-premium {
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    /* Analytics Specific Styling */
+    .chart-container {
+        position: relative;
+        margin: auto;
+        height: 250px;
+        width: 100%;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12 text-center text-md-start">
+        <h2 class="fw-bold dashboard-title">HR Control Center</h2>
+        <p class="text-muted">Final authority for college-wide leave management and reporting.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-4">
+        <div class="card p-4 shadow-sm">
+            <h5 class="fw-bold card-title mb-3"><i class="bi bi-pie-chart me-2"></i>Usage Ratio</h5>
+            <div class="chart-container">
+                <canvas id="leaveTypeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card p-4 shadow-sm">
+            <h5 class="fw-bold card-title mb-3"><i class="bi bi-bar-chart me-2"></i>Departmental Workload</h5>
+            <div class="chart-container">
+                <canvas id="deptPendingChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 justify-content-center">
+    
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm hover-effect">
+            <div class="card-body p-4 text-center">
+                <div class="icon-circle bg-primary bg-opacity-10">
+                    <i class="bi bi-clipboard-check text-primary fs-2"></i>
+                </div>
+                <h4 class="card-title fw-bold">Pending Requests</h4>
+                <p class="text-muted small mb-4">Review and provide final approval for leaves already cleared by HODs.</p>
+                <a href="{% url 'hr_pending_leaves' %}" class="btn btn-primary btn-premium shadow-sm w-100 stretched-link">
+                    Review Pending
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm hover-effect">
+            <div class="card-body p-4 text-center">
+                <div class="icon-circle bg-success bg-opacity-10">
+                    <i class="bi bi-people text-success fs-2"></i>
+                </div>
+                <h4 class="card-title fw-bold">Staff Balances</h4>
+                <p class="text-muted small mb-4">Monitor remaining leave quotas and used leaves for all faculty.</p>
+                <a href="{% url 'hr_staff_balances' %}" class="btn btn-outline-success btn-premium w-100 stretched-link" style="border-width: 2px;">
+                    View Balances
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm hover-effect">
+            <div class="card-body p-4 text-center">
+                <div class="icon-circle bg-info bg-opacity-10">
+                    <i class="bi bi-bar-chart-line text-info fs-2"></i>
+                </div>
+                <h4 class="card-title fw-bold">Overall Report</h4>
+                <p class="text-muted small mb-4">Access comprehensive leave data and analytics across all departments.</p>
+                <a href="{% url 'hr_leave_report' %}" class="btn btn-outline-info btn-premium w-100 stretched-link" style="border-width: 2px;">
+                    View Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const isDark = document.body.getAttribute('data-bs-theme') === 'dark';
+        const labelColor = isDark ? '#94a3b8' : '#64748b';
+        const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+
+       // Doughnut Chart: Leave Distribution
+        new Chart(document.getElementById('leaveTypeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['CL', 'EL', 'ML'],
+                datasets: [{
+                    // The template variables now carry the Float precision from the view
+                    data: [
+                        {{ usage_data.total_cl|default:0.0 }}, 
+                        {{ usage_data.total_el|default:0.0 }}, 
+                        {{ usage_data.total_ml|default:0.0 }}
+                    ],
+                    backgroundColor: ['#0d6efd', '#198754', '#0dcaf0'],
+                    hoverOffset: 4,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: labelColor, usePointStyle: true } },
+                    // Add tooltip callback to show the exact decimal on hover
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.raw.toFixed(1);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Bar Chart: Pending Requests per Department
+        const deptLabels = [{% for item in dept_pending %}"{{ item.dept_name|default:'Unknown' }}",{% endfor %}];
+        const deptCounts = [{% for item in dept_pending %}{{ item.count|default:0 }},{% endfor %}];
+
+        new Chart(document.getElementById('deptPendingChart'), {
+            type: 'bar',
+            data: {
+                labels: deptLabels,
+                datasets: [{
+                    label: 'Pending Leaves',
+                    data: deptCounts,
+                    backgroundColor: '#0d6efd',
+                    borderRadius: 8,
+                    barThickness: 30
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: gridColor },
+                        ticks: { color: labelColor, stepSize: 1 }
+                    },
+                    x: { 
+                        grid: { display: false },
+                        ticks: { color: labelColor }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+
+                }
+            }
+        });
+    });
+</script>
+
+{% endblock %}

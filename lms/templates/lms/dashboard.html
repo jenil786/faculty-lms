@@ -1,3 +1,154 @@
-<td>{{ profile.user.username }}</td>
-<td>{{ profile.department }}</td>
-<td>{{ profile.role }}</td>
+{% extends 'lms/base.html' %}
+
+{% block content %}
+<style>
+    /* Page Title with SSIT Gold accent */
+    .page-title {
+        color: var(--ssit-maroon) !important;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        border-left: 5px solid var(--ssit-gold);
+        padding-left: 15px;
+    }
+
+    [data-bs-theme="dark"] .page-title {
+        color: var(--ssit-gold) !important;
+    }
+
+    /* Card Styling */
+    .card {
+        background-color: var(--bg-card) !important;
+        border: none !important;
+        border-top: 4px solid var(--ssit-maroon) !important;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+        transition: background-color 0.3s ease;
+    }
+
+    /* Table Styling for both themes */
+    .table {
+        color: var(--text-main) !important;
+        border-color: var(--input-border) !important;
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background-color: rgba(128, 0, 64, 0.05) !important;
+        color: var(--ssit-maroon) !important;
+        width: 30%;
+        font-weight: 600;
+        border-color: var(--input-border) !important;
+    }
+
+    [data-bs-theme="dark"] .table th {
+        background-color: rgba(253, 184, 19, 0.05) !important;
+        color: var(--ssit-gold) !important;
+    }
+
+    .table td {
+        color: var(--text-main) !important;
+        border-color: var(--input-border) !important;
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background-color: var(--ssit-maroon) !important;
+        border-color: var(--ssit-maroon) !important;
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--ssit-rose) !important;
+        transform: translateY(-2px);
+    }
+
+    .btn-outline-secondary {
+        border-radius: 10px;
+        padding: 10px 24px;
+        color: var(--ssit-maroon) !important;
+        border-color: var(--ssit-maroon) !important;
+        font-weight: 600;
+        background: transparent;
+    }
+
+    [data-bs-theme="dark"] .btn-outline-secondary {
+        color: var(--ssit-gold) !important;
+        border-color: var(--ssit-gold) !important;
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: var(--ssit-maroon) !important;
+        color: #fff !important;
+        border-color: var(--ssit-maroon) !important;
+    }
+
+    /* Icons and Badges */
+    .icon-accent {
+        background-color: rgba(253, 184, 19, 0.15) !important;
+        color: var(--ssit-maroon) !important;
+    }
+
+    [data-bs-theme="dark"] .icon-accent {
+        color: var(--ssit-gold) !important;
+    }
+
+    .badge-custom {
+        background-color: rgba(166, 43, 94, 0.1) !important;
+        color: var(--ssit-maroon) !important;
+        border: 1px solid rgba(166, 43, 94, 0.3) !important;
+        font-weight: 600;
+    }
+
+    [data-bs-theme="dark"] .badge-custom {
+        background-color: rgba(253, 184, 19, 0.1) !important;
+        color: var(--ssit-gold) !important;
+        border: 1px solid rgba(253, 184, 19, 0.3) !important;
+    }
+</style>
+
+<h3 class="page-title">User Dashboard</h3>
+
+<div class="card p-4">
+    <div class="d-flex align-items-center mb-4">
+        <div class="icon-accent p-3 rounded-circle me-3">
+            <i class="bi bi-person-badge fs-4"></i>
+        </div>
+        <h5 class="mb-0 fw-bold" style="color: var(--text-main);">Profile Information</h5>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <tbody>
+                <tr>
+                    <th><i class="bi bi-person me-2"></i>Username</th>
+                    <td>{{ profile.user.username }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-building me-2"></i>Department</th>
+                    <td>{{ profile.department|default:"Not Assigned" }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-shield-check me-2"></i>Role</th>
+                    <td>
+                        <span class="badge badge-custom px-3 py-2">
+                            {{ profile.role }}
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+        <a href="{% url 'apply_leave' %}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Apply Leave
+        </a>
+        <a href="{% url 'my_leaves' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list-ul me-1"></i> My Leaves
+        </a>
+    </div>
+</div>
+{% endblock %}

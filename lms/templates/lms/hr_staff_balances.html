@@ -1,0 +1,245 @@
+{% extends 'lms/base.html' %}
+
+{% block content %}
+<style>
+    /* Light Theme Defaults (overridden by dark mode toggle) */
+    :root {
+        --card-bg: rgba(255, 255, 255, 0.9);
+        --card-border: rgba(0, 0, 0, 0.1);
+        --row-bg: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --input-bg: #f8fafc;
+        --input-border: #e2e8f0;
+    }
+
+    /* Dark Mode Overrides (if [data-bs-theme='dark'] is active on body) */
+    [data-bs-theme='dark'] {
+        --card-bg: rgba(30, 41, 59, 0.7);
+        --card-border: rgba(255, 255, 255, 0.1);
+        --row-bg: #1e293b;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --input-bg: #0f172a;
+        --input-border: #334155;
+    }
+
+    .glass-card {
+        background: var(--card-bg) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--card-border) !important;
+        border-radius: 15px;
+    }
+    
+    .table-premium {
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+
+    .table-premium tr {
+        background: var(--row-bg) !important;
+        color: var(--text-main) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .table-premium td, .table-premium th {
+        padding: 1rem !important;
+        vertical-align: middle;
+        border: none !important;
+    }
+
+    .table-premium thead th {
+        background: transparent !important;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    .table-premium td:first-child { border-radius: 10px 0 0 10px; }
+    .table-premium td:last-child { border-radius: 0 10px 10px 0; }
+
+    .badge-total {
+        background: rgba(56, 189, 248, 0.1);
+        color: #0ea5e9;
+        font-weight: 600;
+        padding: 0.5em 1em;
+        border-radius: 8px;
+        display: inline-block;
+    }
+    
+    .search-input {
+        background: var(--input-bg) !important;
+        border: 1px solid var(--input-border) !important;
+        color: var(--text-main) !important;
+        border-radius: 10px;
+    }
+
+    .text-remaining {
+        color: #0ea5e9;
+        font-size: 0.8rem;
+    }
+
+    /* Page Titles adaptive color */
+    .adaptive-text { color: var(--text-main) !important; }
+    .adaptive-muted { color: var(--text-muted) !important; }
+
+    /* Modal Adaptive Styles */
+    .modal-content {
+        background-color: var(--row-bg) !important;
+        color: var(--text-main) !important;
+        border: 1px solid var(--card-border) !important;
+    }
+    .modal-input {
+        background-color: var(--input-bg) !important;
+        color: var(--text-main) !important;
+        border: 1px solid var(--input-border) !important;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-6">
+            <h2 class="fw-bold adaptive-text mb-0">Staff Leave Balances</h2>
+            <p class="adaptive-muted small">Detailed view of used and remaining quotas per category.</p>
+        </div>
+        <div class="col-md-6 d-flex justify-content-md-end gap-3 mt-3 mt-md-0">
+            <div class="input-group" style="max-width: 300px;">
+                <span class="input-group-text search-input border-end-0"><i class="bi bi-search"></i></span>
+                <input type="text" id="staffSearch" class="form-control search-input border-start-0" placeholder="Search staff name...">
+            </div>
+            <a href="{% url 'hr_dashboard' %}" class="btn btn-outline-secondary px-4 shadow-sm" style="border-radius: 10px;">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </a>
+            <button type="button" class="btn btn-danger px-4 shadow-sm" style="border-radius: 10px;" data-bs-toggle="modal" data-bs-target="#resetModal">
+                <i class="bi bi-arrow-repeat me-2"></i>Annual Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="glass-card shadow-sm p-3">
+        <div class="table-responsive">
+            <table class="table table-premium mb-0" id="balanceTable">
+                <thead>
+                    <tr>
+                        <th>Staff Member</th>
+                        <th class="text-center">Casual (CL)</th>
+                        <th class="text-center">Earned (EL)</th>
+                        <th class="text-center">Medical (ML)</th>
+                        <th class="text-end pe-4">Total Remaining</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bal in balances %}
+                    <tr>
+                        <td class="fw-bold">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                                    {{ bal.user.username|first|upper }}
+                                </div>
+                                <span class="adaptive-text">{{ bal.user.username }}</span>
+                            </div>
+                        </td>
+                        
+                        <td class="text-center">
+                            <span class="adaptive-text fw-bold">{{ bal.cl_balance }}</span>
+                            <div class="text-warning small mt-1">Used: {{ bal.cl_used }}</div>
+                            <div class="text-remaining small">Remain: {{ bal.cl_balance|add:bal.cl_used_negative }}</div> 
+                        </td>
+
+                        <td class="text-center">
+                            <span class="adaptive-text fw-bold">{{ bal.el_balance }}</span>
+                            <div class="text-warning small mt-1">Used: {{ bal.el_used }}</div>
+                            <div class="text-remaining small">Remain: {{ bal.el_balance|add:bal.el_used_negative }}</div>
+                        </td>
+
+                        <td class="text-center">
+                            <span class="adaptive-text fw-bold">{{ bal.ml_balance }}</span>
+                            <div class="text-warning small mt-1">Used: {{ bal.ml_used }}</div>
+                            <div class="text-remaining small">Remain: {{ bal.ml_balance|add:bal.ml_used_negative }}</div>
+                        </td>
+
+                        <td class="text-end pe-4">
+                            <span class="badge-total fs-6">
+                                {{ bal.remaining_leaves }} Days
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 adaptive-muted">No records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="resetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold">Bulk Annual Reset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-warning py-2 small">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Warning: This will set USED leaves to 0 for ALL staff.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold adaptive-muted">Casual Leave (CL) Total</label>
+                        <input type="number" name="cl_amount" class="form-control modal-input" value="12">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold adaptive-muted">Earned Leave (EL) Total</label>
+                        <input type="number" name="el_amount" class="form-control modal-input" value="10">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold adaptive-muted">Medical Leave (ML) Total</label>
+                        <input type="number" name="ml_amount" class="form-control modal-input" value="10">
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="bulk_reset" class="btn btn-danger px-4">Confirm Reset All</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const rows = document.querySelectorAll('#balanceTable tbody tr');
+        
+        rows.forEach(row => {
+            // Index 1, 2, 3 correspond to CL, EL, ML
+            for (let i = 1; i <= 3; i++) {
+                const cell = row.cells[i];
+                const totalSpan = cell.querySelector('.adaptive-text');
+                if(!totalSpan) continue;
+
+                const total = parseFloat(totalSpan.innerText) || 0;
+                const usedText = cell.querySelector('.text-warning').innerText;
+                const used = parseFloat(usedText.replace('Used: ', '')) || 0;
+                
+                const remainDiv = cell.querySelector('.text-remaining');
+                const calculation = (total - used).toFixed(1);
+                
+                remainDiv.innerText = `Remain: ${calculation}`;
+            }
+        });
+
+        document.getElementById('staffSearch').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            rows.forEach(row => {
+                let name = row.cells[0].textContent.toLowerCase();
+                row.style.display = name.includes(filter) ? '' : 'none';
+            });
+        });
+    });
+</script>
+{% endblock %}

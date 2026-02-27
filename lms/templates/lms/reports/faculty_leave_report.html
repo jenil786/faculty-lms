@@ -1,85 +1,324 @@
-<h2>My Leave Report</h2>
-<a href="{% url 'export_pdf' 'self' %}">
-  <button>Download My Leave PDF</button>
-</a>
+{% extends 'lms/base.html' %}
 
-<hr>
+{% block content %}
+<style>
+    /* Global Theme Integration */
+    body { 
+        background-color: var(--bg-body) !important; 
+        color: var(--text-main);
+        transition: background-color 0.3s, color 0.3s;
+    }
 
-<form method="get">
-  Month:
- <select name="month">
-  <option value="">All Months</option>
-  <option value="1">Jan</option>
-  <option value="2">Feb</option>
-  <option value="3">Mar</option>
-  <option value="4">Apr</option>
-  <option value="5">May</option>
-  <option value="6">Jun</option>
-  <option value="7">Jul</option>
-  <option value="8">Aug</option>
-  <option value="9">Sep</option>
-  <option value="10">Oct</option>
-  <option value="11">Nov</option>
-  <option value="12">Dec</option>
-</select>
+    h2, h3, h5, h6 { color: var(--text-main) !important; }
 
+    .card { 
+        background-color: var(--bg-card) !important; 
+        border: 1px solid var(--input-border) !important; 
+    }
+    
+    .card-header { 
+        background-color: var(--header-bg) !important; 
+        border-bottom: 1px solid var(--input-border) !important; 
+    }
 
-  Year:
- <select name="year">
-  <option value="">All Years</option>
-  <option value="2024">2024</option>
-  <option value="2025">2025</option>
-  <option value="2026">2026</option>
-</select>
+    .form-select {
+        background-color: var(--input-bg) !important;
+        border-color: var(--input-border) !important;
+        color: var(--text-main) !important;
+    }
 
+    .table { color: var(--text-main) !important; }
+    .table-light { 
+        background-color: rgba(0,0,0,0.03) !important; 
+        color: var(--text-main) !important;
+    }
+    [data-bs-theme="dark"] .table-light {
+        background-color: rgba(255,255,255,0.05) !important;
+    }
+    .table td, .table th { border-color: var(--input-border) !important; }
 
-  <button type="submit">Filter</button>
-</form>
+    .text-dark { color: var(--text-main) !important; }
+    .text-muted { color: var(--text-muted) !important; }
+    
+    .badge.bg-light {
+        background-color: var(--header-bg) !important;
+        color: var(--text-main) !important;
+        border-color: var(--input-border) !important;
+    }
 
-<hr>
-<h3>Leave Summary</h3>
+    .italic-text { font-style: italic; }
+    .duration-text { font-weight: 600; display: block; }
+    .sub-duration { font-size: 0.85rem; color: var(--text-muted); }
+    .badge-leave-type { 
+        background: var(--input-bg); 
+        border: 1px solid var(--input-border); 
+        padding: 2px 8px; 
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
 
-<ul>
-  {% for item in summary %}
-    <li>{{ item.status }} : {{ item.total }}</li>
-  {% empty %}
-    <li>No data available</li>
-  {% endfor %}
-</ul>
+    /* --- UPDATED CONSISTENT BADGE STYLES --- */
+    .balance-pill {
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 50px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid;
+        font-size: 0.85rem;
+    }
+    .pill-cl { color: #0d6efd; border-color: #0d6efd; background: rgba(13, 110, 253, 0.1); }
+    .pill-ml { color: #0dcaf0; border-color: #0dcaf0; background: rgba(13, 202, 240, 0.1); }
+    .pill-el { color: #ffc107; border-color: #ffc107; background: rgba(255, 193, 7, 0.1); }
+    .pill-total { 
+        color: var(--text-main); 
+        border-color: var(--text-main); 
+        background: rgba(100, 116, 139, 0.1); 
+    }
 
-<hr>
+    @media (max-width: 768px) {
+        .row.align-items-center { text-align: center; }
+        .text-md-end {
+            margin-top: 15px;
+            justify-content: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .table-responsive {
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+        }
+    }
+</style>
 
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="fw-bold">My Leave Report</h2>
+        <p class="text-muted">View history and download records</p>
+    </div>
+   <div class="col-md-6 text-md-end">
+    {% if request.user.leavebalance %}
+    <div class="d-inline-flex flex-wrap justify-content-end gap-2 align-items-center">
+        <span class="balance-pill pill-cl">
+            CL: <strong>{{ request.user.leavebalance.cl_balance|add:request.user.leavebalance.cl_used_negative }}</strong>
+        </span>
+        
+        <span class="balance-pill pill-ml">
+            ML: <strong>{{ request.user.leavebalance.ml_balance|add:request.user.leavebalance.ml_used_negative }}</strong>
+        </span>
+        
+        <span class="balance-pill pill-el">
+            EL: <strong>{{ request.user.leavebalance.el_balance|add:request.user.leavebalance.el_used_negative }}</strong>
+        </span>
 
-<hr>
-<table border="1">
-<tr>
-  <th>Faculty</th>
-  <th>Role</th>
-  <th>Department</th>
-  <th>From</th>
-  <th>To</th>
-  <th>Status</th>
-  <th>Applied On</th>
-</tr>
+        <span class="balance-pill pill-total shadow-sm">
+            Total: <strong>{{ request.user.leavebalance.remaining_leaves }}</strong>
+        </span>
 
-{% for leave in leaves %}
-<tr>
-  <td>{{ leave.user.username }}</td>
-  <td>{{ leave.user.facultyprofile.get_role_display }}</td>
-  <td>{{ leave.user.facultyprofile.department.name }}</td>
-  <td>{{ leave.from_date }}</td>
-  <td>{{ leave.to_date }}</td>
-  <td>{{ leave.get_status_display }}</td>
-  <td>{{ leave.applied_on|date:"Y-m-d" }}</td>
-</tr>
-{% empty %}
-<tr>
-  <td colspan="7">No records found</td>
-</tr>
-{% endfor %}
-</table>
+        <a href="{% url 'export_leave_report_pdf' 'self' %}?month={{ request.GET.month }}&year={{ request.GET.year }}" 
+           class="btn btn-outline-danger btn-sm shadow-sm rounded-pill px-3 py-2 ms-md-2">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+        </a>
+    </div>
+    {% endif %}
+</div>
+</div>
 
-<a href="{% url 'dashboard' %}">
-  ← Back to Dashboard
-</a>
-<hr>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Select Month</label>
+                <select name="month" class="form-select">
+                    <option value="" {% if not request.GET.month %}selected{% endif %}>All Months</option>
+                    <option value="1" {% if request.GET.month == '1' %}selected{% endif %}>January</option>
+                    <option value="2" {% if request.GET.month == '2' %}selected{% endif %}>February</option>
+                    <option value="3" {% if request.GET.month == '3' %}selected{% endif %}>March</option>
+                    <option value="4" {% if request.GET.month == '4' %}selected{% endif %}>April</option>
+                    <option value="5" {% if request.GET.month == '5' %}selected{% endif %}>May</option>
+                    <option value="6" {% if request.GET.month == '6' %}selected{% endif %}>June</option>
+                    <option value="7" {% if request.GET.month == '7' %}selected{% endif %}>July</option>
+                    <option value="8" {% if request.GET.month == '8' %}selected{% endif %}>August</option>
+                    <option value="9" {% if request.GET.month == '9' %}selected{% endif %}>September</option>
+                    <option value="10" {% if request.GET.month == '10' %}selected{% endif %}>October</option>
+                    <option value="11" {% if request.GET.month == '11' %}selected{% endif %}>November</option>
+                    <option value="12" {% if request.GET.month == '12' %}selected{% endif %}>December</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Select Year</label>
+                <select name="year" class="form-select">
+                    <option value="" {% if not request.GET.year %}selected{% endif %}>All Years</option>
+                    <option value="2024" {% if request.GET.year == '2024' %}selected{% endif %}>2024</option>
+                    <option value="2025" {% if request.GET.year == '2025' %}selected{% endif %}>2025</option>
+                    <option value="2026" {% if request.GET.year == '2026' %}selected{% endif %}>2026</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="bi bi-filter me-2"></i>Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-4">
+    {% for item in summary %}
+    <div class="col-md-4 col-6 mb-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <h6 class="text-uppercase text-muted small fw-bold">{{ item.status }}</h6>
+            <h3 class="mb-0 fw-bold">{{ item.total }}</h3>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center text-muted">No summary data available</div>
+    {% endfor %}
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-list-columns-reverse me-2 text-primary"></i>Personal Leave Records</h5>
+        {% if leaves.paginator.num_pages > 1 %}
+        <span class="badge bg-light text-dark border">Page {{ leaves.number }} of {{ leaves.paginator.num_pages }}</span>
+        {% endif %}
+    </div>
+
+    <div class="table-responsive d-none d-md-block">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Duration</th>
+                    <th>Reason</th>
+                    <th class="text-center">Leave Type</th>
+                    <th>Current Status</th>
+                    <th class="text-end pe-4">Status Label</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leave in leaves %}
+                <tr>
+                    <td class="ps-4">
+                        <span class="duration-text">{{ leave.from_date|date:"M d, Y" }}</span>
+                        <span class="sub-duration">to {{ leave.to_date|date:"M d, Y" }}</span>
+                    </td>
+                    <td>
+                        <div class="text-truncate" style="max-width: 250px;" title="{{ leave.reason }}">
+                            {{ leave.reason }}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge-leave-type text-uppercase">{{ leave.leave_type }}</span>
+                        {% if leave.half_day %}
+                        <div class="mt-1">
+                            <small class="text-info fw-medium"><i class="bi bi-clock-history"></i> {{ leave.get_session_display }}</small>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if leave.status == 'PENDING' %}
+                            <span class="text-warning small"><i class="bi bi-hourglass-split"></i> At HOD</span>
+                        {% elif leave.status == 'HOD_APPROVED' %}
+                            <span class="text-success small"><i class="bi bi-check-circle-fill"></i> HOD Approved</span>
+                        {% elif leave.status == 'HR_APPROVED' %}
+                            <span class="badge bg-success rounded-pill px-3"><i class="bi bi-check-all"></i> Fully Approved</span>
+                        {% else %}
+                            <span class="badge bg-danger rounded-pill px-3">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <small class="fw-bold text-uppercase" style="font-size: 0.7rem;">
+                            {% if leave.status == 'PENDING' %}WAITING HOD
+                            {% elif leave.status == 'HOD_APPROVED' %}WAITING HR
+                            {% elif leave.status == 'HR_APPROVED' %}COMPLETE
+                            {% else %}CLOSED{% endif %}
+                        </small>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-md-none">
+        {% for leave in leaves %}
+        <div class="p-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="fw-bold d-block">{{ leave.from_date|date:"D, M d" }}</span>
+                    {% if leave.from_date != leave.to_date %}
+                        <small class="text-muted">to {{ leave.to_date|date:"D, M d" }}</small>
+                    {% endif %}
+                </div>
+                <span class="badge {% if leave.status == 'HR_APPROVED' %}bg-success{% elif leave.status == 'REJECTED' %}bg-danger{% else %}bg-warning text-dark{% endif %} rounded-pill">
+                    {{ leave.get_status_display }}
+                </span>
+            </div>
+            
+            <div class="mb-2">
+                <span class="badge-leave-type me-2">{{ leave.leave_type }}</span>
+                {% if leave.half_day %}
+                <small class="text-info"><i class="bi bi-clock me-1"></i>{{ leave.get_session_display }}</small>
+                {% endif %}
+            </div>
+
+            <p class="small text-muted mb-1 italic-text">"{{ leave.reason|truncatechars:100 }}"</p>
+
+            {% if leave.rejection_reason %}
+                <div class="alert alert-danger py-1 px-2 mt-2 mb-0" style="font-size: 0.75rem;">
+                    <strong>Reason:</strong> {{ leave.rejection_reason }}
+                </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="p-4 text-center text-muted">No records found.</div>
+        {% endfor %}
+    </div>
+
+    {% if leaves.has_other_pages %}
+    <div class="card-footer bg-transparent border-top-0 py-3">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if leaves.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ leaves.previous_page_number }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}" aria-label="Previous">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                {% endif %}
+
+                {% for i in leaves.paginator.page_range %}
+                    {% if leaves.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                    {% elif i > leaves.number|add:'-3' and i < leaves.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if leaves.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ leaves.next_page_number }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}" aria-label="Next">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'dashboard' %}" class="btn btn-link text-decoration-none p-0">
+        <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

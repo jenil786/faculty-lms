@@ -1,27 +1,369 @@
-<h2>Apply Leave</h2>
+{% extends 'lms/base.html' %}
 
-<form method="post">
-  {% csrf_token %}
+{% block content %}
+<style>
+    body { background-color: var(--bg-body) !important; color: var(--text-main); }
+    
+    /* Simple & Sober Card Styling - Blue/Slate Theme */
+    .card { 
+        background-color: var(--bg-card) !important; 
+        border: 1px solid var(--input-border) !important; 
+        border-radius: 20px; 
+        box-shadow: 0 10px 25px var(--accent-shadow) !important;
+        transition: all 0.3s ease;
+    }
+    
+    .card-header { 
+        background-color: transparent !important; 
+        border-bottom: 1px solid var(--input-border) !important; 
+        padding: 1.5rem !important;
+    }
 
-  {% if form.non_field_errors %}
-    <div style="color:red;">
-      {{ form.non_field_errors }}
+    /* Primary color switched to Professional Blue */
+    .text-primary { color: #3b82f6 !important; }
+    .text-muted { color: var(--text-muted) !important; }
+    
+    label { color: var(--text-main) !important; font-weight: 600; margin-bottom: 0.5rem; display: block; }
+
+    /* Form Inputs Styling - Slate/Grey Borders */
+    select, textarea, input {
+        color: var(--text-main) !important;
+        background-color: var(--input-bg) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 12px !important;
+        padding: 0.65rem 0.85rem !important;
+    }
+    
+    select:focus, textarea:focus, input:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.15) !important;
+        outline: none;
+    }
+
+    select { display: inline-block !important; width: 100% !important; }
+    textarea { width: 100%; }
+
+    /* Buttons & Badges - Slate and Blue Palette */
+    .btn-primary {
+        background-color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+        border-radius: 12px;
+        padding: 12px 24px;
+        transition: 0.3s;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+    .btn-primary:hover {
+        background-color: #2563eb !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    /* --- UPDATED CONSISTENT BADGE STYLES --- */
+    .balance-pill {
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 50px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid;
+        font-size: 0.85rem;
+    }
+    .pill-cl { color: #0d6efd; border-color: #0d6efd; background: rgba(13, 110, 253, 0.1); }
+    .pill-ml { color: #0dcaf0; border-color: #0dcaf0; background: rgba(13, 202, 240, 0.1); }
+    .pill-el { color: #ffc107; border-color: #ffc107; background: rgba(255, 193, 7, 0.1); }
+    .pill-total { 
+        color: var(--text-main); 
+        border-color: var(--text-main); 
+        background: rgba(100, 116, 139, 0.1); 
+    }
+
+    .badge-info {
+        background-color: #e2e8f0 !important;
+        color: #475569 !important;
+        border: none;
+    }
+
+    /* Half Day Switch Styling */
+    .half-day-box {
+        border: 1px solid var(--input-border);
+        border-radius: 12px;
+        transition: 0.2s;
+    }
+    
+    .half-day-box:hover {
+        background: rgba(59, 130, 246, 0.04) !important;
+    }
+    
+    .half-day-box h6 { color: var(--text-main) !important; }
+    /* Custom Toggle Switch Color */
+    .form-check-input:checked {
+        background-color: #3b82f6 !important; /* Blue color when ON */
+        border-color: #3b82f6 !important;
+    }
+
+    .form-check-input {
+        cursor: pointer;
+        background-color: #e2e8f0; /* Greyish color when OFF */
+        border-color: #cbd5e1 !important;
+    }
+
+    .form-switch .form-check-input {
+        width: 2.5em !important; /* Makes it slightly larger for better visibility */
+    }
+    /* Modal Styling */
+    .modal-content { 
+        background-color: var(--bg-card); 
+        border: 1px solid var(--input-border); 
+        border-radius: 24px; 
+        color: var(--text-main); 
+    }
+    .success-icon { font-size: 4rem; color: #10b981; }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none text-muted fw-bold">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+            {% if request.user.leavebalance %}
+                <div class="d-flex flex-wrap justify-content-md-end gap-2">
+                    <span class="balance-pill pill-cl">
+                        CL: <strong>{{ request.user.leavebalance.cl_balance|add:request.user.leavebalance.cl_used_negative }}</strong>
+                    </span>
+                    
+                    <span class="balance-pill pill-ml">
+                        ML: <strong>{{ request.user.leavebalance.ml_balance|add:request.user.leavebalance.ml_used_negative }}</strong>
+                    </span>
+                    
+                    <span class="balance-pill pill-el">
+                        EL: <strong>{{ request.user.leavebalance.el_balance|add:request.user.leavebalance.el_used_negative }}</strong>
+                    </span>
+
+                    <span class="balance-pill pill-total">
+                        Total: <strong>{{ request.user.leavebalance.remaining_leaves }}</strong>
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header text-center text-md-start">
+                <h4 class="mb-1 fw-bold text-primary">Apply for Leave</h4>
+                <p class="text-muted small mb-0">Select your dates and provide a reason for review.</p>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                <form method="post" id="leaveForm" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger border-0 mb-4 shadow-sm" style="border-radius: 12px;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                                <div>{{ form.non_field_errors.0 }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-calendar-event me-2 text-primary"></i>From Date</label>
+                        {{ form.from_date }}
+                        {% if form.from_date.errors %}<div class="text-danger small mt-1">{{ form.from_date.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-calendar-check me-2 text-primary"></i>To Date</label>
+                        {{ form.to_date }}
+                        {% if form.to_date.errors %}<div class="text-danger small mt-1">{{ form.to_date.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Leave Type Duration</label>
+                        <div class="form-check form-switch p-3 d-flex align-items-center justify-content-between half-day-box" 
+                             style="cursor: pointer;" 
+                             onclick="let cb = this.querySelector('input[type=\'checkbox\']'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change'));">
+                            <div class="ms-2">
+                                <h6 class="mb-0 fw-bold">Half Day Leave</h6>
+                                <small class="text-muted">Deducts 0.5 from balance</small>
+                            </div>
+                            <div style="pointer-events: none;">
+                                {{ form.half_day }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 d-none" id="session-container">
+                        <label class="form-label"><i class="bi bi-clock me-2 text-primary"></i>Select Session</label>
+                        {{ form.session }}
+                        {% if form.session.errors %}<div class="text-danger small mt-1">{{ form.session.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-tag-fill me-2 text-primary"></i>Select Leave Type</label>
+                        {{ form.leave_type }}
+                        {% if form.leave_type.errors %}<div class="text-danger small mt-1">{{ form.leave_type.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mt-3 mb-4 text-center">
+                        <div id="day-counter" class="d-none">
+                            <span class="badge rounded-pill badge-info p-2 px-3 fs-6 shadow-sm">
+                                <i class="bi bi-clock-history me-2"></i>Total Duration: <span id="days-count" class="fw-bold">0</span> Days
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Leave</label>
+                        {{ form.reason }}
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm">
+                            <i class="bi bi-send-fill me-2"></i>Submit Application
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-  {% endif %}
+</div>
 
-  <label>From Date:</label><br>
-  {{ form.from_date }}<br><br>
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg p-4 text-center">
+            <div class="modal-body">
+                <div class="success-icon mb-3">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <h3 class="fw-bold" style="color: var(--text-main);">Submitted!</h3>
+                <p class="text-muted">Your leave application has been sent for approval.</p>
+                <div class="mt-4">
+                    <a href="{% url 'my_leaves' %}" class="btn btn-primary px-4 py-2 rounded-pill fw-bold">View My Leaves</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-  <label>To Date:</label><br>
-  {{ form.to_date }}<br><br>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let hasSuccessMessage = false;
+        {% if messages %}
+            {% for message in messages %}
+                {% if 'success' in message.tags %}
+                    hasSuccessMessage = true;
+                {% endif %}
+            {% endfor %}
+        {% endif %}
 
-  <label>Reason:</label><br>
-  {{ form.reason }}<br><br>
+        if (hasSuccessMessage) {
+            var successModalEl = document.getElementById('successModal');
+            if (successModalEl) {
+                var myModal = new bootstrap.Modal(successModalEl);
+                myModal.show();
+            }
+        }
 
-  <button type="submit">Submit Leave</button>
-</form>
+        const form = document.getElementById('leaveForm');
+        const halfDayToggle = document.querySelector('input[name="half_day"]');
+        const sessionContainer = document.getElementById('session-container');
+        const fromDateInput = document.querySelector('input[name="from_date"]');
+        const toDateInput = document.querySelector('input[name="to_date"]');
+        const toDateContainer = toDateInput ? toDateInput.closest('.mb-4') : null;
+        const dayCounter = document.getElementById('day-counter');
+        const daysCountText = document.getElementById('days-count');
 
+        const today = new Date();
+        const maxDate = new Date(today);
+        maxDate.setMonth(today.getMonth() + 2);
+        
+        const yyyy = maxDate.getFullYear();
+        const mm = String(maxDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(maxDate.getDate()).padStart(2, '0');
+        const formattedMaxDate = `${yyyy}-${mm}-${dd}`;
 
-<a href="{% url 'dashboard' %}">
-  <button type="button">⬅ Back to Dashboard</button>
-</a>
+        if(fromDateInput) fromDateInput.setAttribute('max', formattedMaxDate);
+        if(toDateInput) toDateInput.setAttribute('max', formattedMaxDate);
+
+        function syncAndCalculate() {
+            if (!fromDateInput || !toDateInput || !halfDayToggle) return;
+
+            if (halfDayToggle.checked) {
+                sessionContainer.classList.remove('d-none');
+                if (fromDateInput.value) { toDateInput.value = fromDateInput.value; }
+                
+                toDateInput.readOnly = true;
+                if (toDateContainer) {
+                    toDateContainer.style.opacity = '0.6';
+                    toDateContainer.style.pointerEvents = 'none';
+                }
+                
+                if (dayCounter) dayCounter.classList.remove('d-none');
+                if (daysCountText) daysCountText.innerText = "0.5";
+
+            } else {
+                sessionContainer.classList.add('d-none');
+                toDatedInput.readOnly = false;
+                if (toDateContainer) {
+                    toDateContainer.style.opacity = '1';
+                    toDateContainer.style.pointerEvents = 'auto';
+                }
+
+                if (dayCounter) dayCounter.classList.add('d-none');
+
+                if (fromDateInput.value && toDateInput.value) {
+                    const start = new Date(fromDateInput.value);
+                    const end = new Date(toDateInput.value);
+                    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+                    if (diffDays > 0) {
+                        if (dayCounter) dayCounter.classList.remove('d-none');
+                        if (daysCountText) daysCountText.innerText = diffDays;
+                    }
+                }
+            }
+        }
+
+        if(halfDayToggle) halfDayToggle.addEventListener('change', syncAndCalculate);
+        if(fromDateInput) fromDateInput.addEventListener('change', syncAndCalculate);
+        if(toDateInput) toDateInput.addEventListener('change', syncAndCalculate);
+
+        syncAndCalculate();
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const start = new Date(fromDateInput.value);
+                const end = new Date(toDateInput.value);
+
+                if (start > maxDate || end > maxDate) {
+                    e.preventDefault(); 
+
+                    const existingError = document.getElementById('custom-error-alert');
+                    if (existingError) existingError.remove();
+
+                    const errorAlert = document.createElement('div');
+                    errorAlert.id = 'custom-error-alert';
+                    errorAlert.className = 'alert alert-danger shadow-sm border-0 mb-4';
+                    errorAlert.style.borderRadius = "12px";
+                    errorAlert.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                            <div>
+                                Your leave should not exceed the two month window.<br>
+                                <small>(Limit: ${formattedMaxDate})</small>
+                            </div>
+                        </div>
+                    `;
+
+                    form.insertBefore(errorAlert, form.firstChild);
+                    errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

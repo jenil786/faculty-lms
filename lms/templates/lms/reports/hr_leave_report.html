@@ -1,79 +1,313 @@
-<h2>HR Leave Report (College Level)</h2>
-<a href="{% url 'export_pdf' 'all' %}">
-  <button>Download College PDF</button>
-</a>
+{% extends 'lms/base.html' %}
 
-<hr>
+{% block content %}
+<style>
+    /* Premium Theme Overrides */
+    [data-bs-theme="dark"] {
+        --card-bg-hover: #1e293b;
+        --title-color: #f8fafc;
+        --accent-shadow: rgba(0, 0, 0, 0.4);
+        --filter-bg: #1e293b;
+    }
+    [data-bs-theme="light"] {
+        --card-bg-hover: #ffffff;
+        --title-color: #0f172a;
+        --accent-shadow: rgba(0, 0, 0, 0.05);
+        --filter-bg: #f8fafc;
+    }
 
-<form method="get">
-  Month:
- <select name="month">
-  <option value="">All Months</option>
-  <option value="1">Jan</option>
-  <option value="2">Feb</option>
-  <option value="3">Mar</option>
-  <option value="4">Apr</option>
-  <option value="5">May</option>
-  <option value="6">Jun</option>
-  <option value="7">Jul</option>
-  <option value="8">Aug</option>
-  <option value="9">Sep</option>
-  <option value="10">Oct</option>
-  <option value="11">Nov</option>
-  <option value="12">Dec</option>
-</select>
+    .dashboard-title {
+        color: var(--title-color) !important;
+        letter-spacing: -1px;
+    }
+    
+    .card {
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 20px;
+    }
 
+    /* Summary Card Styling */
+    .stat-card {
+        border-radius: 15px;
+        border-top: 4px solid #0d6efd;
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover { transform: translateY(-5px); }
 
-  Year:
- <select name="year">
-  <option value="">All Years</option>
-  <option value="2024">2024</option>
-  <option value="2025">2025</option>
-  <option value="2026">2026</option>
-</select>
-  <button type="submit">Filter</button>
-</form>
-<a href="{% url 'dashboard' %}">
-  ← Back to Dashboard
-</a>
-<hr>
-<h3>Leave Summary</h3>
+    /* Filter Bar Styling */
+    .filter-section {
+        background-color: var(--filter-bg) !important;
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid var(--input-border);
+    }
 
-<ul>
-  {% for item in summary %}
-    <li>{{ item.status }} : {{ item.total }}</li>
-  {% empty %}
-    <li>No data available</li>
-  {% endfor %}
-</ul>
+    .form-select, .form-control {
+        background-color: var(--bg-body) !important;
+        color: var(--text-main) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 10px;
+    }
 
-<hr>
-<table border="1">
-  <tr>
-    <th>Faculty</th>
-    <th>Role</th>
-    <th>Department</th>
-    <th>From</th>
-    <th>To</th>
-    <th>Status</th>
-    <th>Applied On</th>
-  </tr>
+    /* Table Consistency Fixes */
+    .table thead th {
+        background-color: var(--filter-bg);
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        padding: 1rem;
+    }
 
-  {% for leave in leaves %}
-  <tr>
-    <td>{{ leave.user.username }}</td>
-    <td>{{ leave.user.facultyprofile.get_role_display }}</td>
-    <td>{{ leave.user.facultyprofile.department.name }}</td>
-    <td>{{ leave.from_date }}</td>
-    <td>{{ leave.to_date }}</td>
-    <td>{{ leave.get_status_display }}</td>
-    <td>{{ leave.applied_on|date:"Y-m-d" }}</td>
-  </tr>
-  {% empty %}
-  <tr>
-    <td colspan="7">No records found</td>
-  </tr>
-  {% endfor %}
-</table>
+    /* Fix for long remarks and misaligned dates */
+    .table td {
+        vertical-align: middle !important;
+    }
 
-<hr>
+    .remarks-container {
+        max-width: 200px; /* Limits width so it doesn't push columns */
+        white-space: normal; /* Allows wrapping */
+        word-wrap: break-word;
+        line-height: 1.4;
+    }
+
+    .date-nowrap {
+        white-space: nowrap; /* Prevents date from splitting in half */
+    }
+
+    .btn-premium {
+        border-radius: 12px;
+        font-weight: 600;
+    }
+    .italic-text { font-style: italic; }
+
+    /* Pagination Styling */
+    .pagination .page-link {
+        border-radius: 8px;
+        margin: 0 3px;
+        color: var(--text-main);
+        background-color: var(--bg-card);
+        border: 1px solid var(--input-border);
+    }
+    .pagination .active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+    }
+</style>
+
+<div class="row mb-4 align-items-center">
+    <div class="col-md-7">
+        <h2 class="fw-bold dashboard-title">College Leave Report</h2>
+        <p class="text-muted">Comprehensive overview of leave trends across all departments.</p>
+    </div>
+    <div class="col-md-5 text-md-end">
+        <button type="button" id="exportPdfBtn" class="btn btn-danger btn-premium shadow-sm px-4">
+            <i class="bi bi-file-earmark-pdf-fill me-2"></i>Export College PDF
+        </button>
+        
+    </div>
+</div>
+
+<div class="filter-section mb-4 shadow-sm">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-uppercase text-muted px-1">Search Faculty</label>
+            <input type="text" name="faculty_query" class="form-control shadow-sm" placeholder="Name or Username..." value="{{ faculty_query }}">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-uppercase text-muted px-1">Department</label>
+            <select name="dept" class="form-select shadow-sm">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if dept_filter == dept.id|stringformat:"i" %}selected{% endif %}>{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label small fw-bold text-uppercase text-muted px-1">Month</label>
+            <select name="month" class="form-select shadow-sm">
+                <option value="">All Months</option>
+                {% for i in "123456789"|make_list %}<option value="{{ forloop.counter }}" {% if month_filter == forloop.counter|stringformat:"i" %}selected{% endif %}>{{ forloop.counter }}</option>{% endfor %}
+                <option value="10" {% if month_filter == "10" %}selected{% endif %}>10</option>
+                <option value="11" {% if month_filter == "11" %}selected{% endif %}>11</option>
+                <option value="12" {% if month_filter == "12" %}selected{% endif %}>12</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label small fw-bold text-uppercase text-muted px-1">Year</label>
+            <select name="year" class="form-select shadow-sm">
+                <option value="">All Years</option>
+                <option value="2025" {% if year_filter == "2025" %}selected{% endif %}>2025</option>
+                <option value="2026" {% if year_filter == "2026" %}selected{% endif %}>2026</option>
+                <option value="2027" {% if year_filter == "2027" %}selected{% endif %}>2027</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100 btn-premium shadow-sm py-2">
+                <i class="bi bi-funnel me-2"></i>Filter
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="fw-bold mb-3 dashboard-title"><i class="bi bi-bar-chart me-2"></i>Leave Summary</h5>
+    </div>
+    {% for item in summary %}
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card stat-card shadow-sm text-center py-3 
+            {% if item.status == 'Approved' %}border-success{% elif item.status == 'Pending' %}border-warning{% else %}border-info{% endif %}">
+            <div class="small text-uppercase fw-bold text-muted">{{ item.status }}</div>
+            <div class="h3 mb-0 fw-bold" style="color: var(--title-color);">{{ item.total }}</div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-light border-0 shadow-sm text-center py-3" style="border-radius:15px; background: var(--filter-bg);">
+            <p class="mb-0 text-muted small">No summary data available for this selection.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card shadow-sm overflow-hidden">
+    <div class="card-header bg-transparent py-3 border-bottom border-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold" style="color: var(--title-color);"><i class="bi bi-grid-3x3-gap-fill me-2 text-primary"></i>All Faculty Records</h5>
+        <span class="badge bg-light text-dark border">Page {{ leaves.number }} of {{ leaves.paginator.num_pages }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Faculty</th>
+                    <th>Dept & Role</th>
+                    <th>Period</th>
+                    <th>Status</th>
+                    <th>Admin Remarks</th>
+                    <th class="pe-4">Applied</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leave in leaves %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold" style="color: var(--title-color);">{{ leave.user.get_full_name|default:leave.user.username }}</div>
+                    </td>
+                    <td>
+                        <div class="small fw-semibold text-primary">{{ leave.user.facultyprofile.department.name }}</div>
+                        <div class="small text-muted">{{ leave.user.facultyprofile.get_role_display }}</div>
+                    </td>
+                    <td class="date-nowrap">
+                        <div class="small fw-bold" style="color: var(--title-color);">{{ leave.from_date }}</div>
+                        <div class="small text-muted">to {{ leave.to_date }}</div>
+                    </td>
+                    <td>
+                        {% if leave.status == 'PENDING' %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 rounded-pill border-0">
+                                <i class="bi bi-person-badge me-1"></i>HOD Pending
+                            </span>
+                        {% elif leave.status == 'HOD_APPROVED' %}
+                            <span class="badge bg-info bg-opacity-10 text-info px-3 rounded-pill border-0">
+                                <i class="bi bi-briefcase me-1"></i>HR Pending
+                            </span>
+                        {% elif leave.status == 'HR_APPROVED' %}
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 rounded-pill border-0">
+                                <i class="bi bi-check-circle-fill me-1"></i>Approved
+                            </span>
+                        {% elif leave.status == 'REJECTED' %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 rounded-pill border-0">
+                                <i class="bi bi-x-circle-fill me-1"></i>Rejected
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="remarks-container">
+                            {% if leave.status == 'REJECTED' %}
+                                <small class="text-muted italic-text">"{{ leave.rejection_reason|default:"No reason provided" }}"</small>
+                            {% else %}
+                                <small class="text-muted">---</small>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="pe-4 text-muted small date-nowrap">
+                        {{ leave.applied_on|date:"Y-m-d" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">No records found matching criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if leaves.has_other_pages %}
+    <div class="card-footer bg-transparent border-top-0 py-3">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if leaves.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ leaves.previous_page_number }}{% if faculty_query %}&faculty_query={{ faculty_query }}{% endif %}{% if dept_filter %}&dept={{ dept_filter }}{% endif %}{% if month_filter %}&month={{ month_filter }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}" aria-label="Previous">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                {% endif %}
+
+                {% for i in leaves.paginator.page_range %}
+                    {% if leaves.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                    {% elif i > leaves.number|add:'-3' and i < leaves.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if faculty_query %}&faculty_query={{ faculty_query }}{% endif %}{% if dept_filter %}&dept={{ dept_filter }}{% endif %}{% if month_filter %}&month={{ month_filter }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if leaves.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ leaves.next_page_number }}{% if faculty_query %}&faculty_query={{ faculty_query }}{% endif %}{% if dept_filter %}&dept={{ dept_filter }}{% endif %}{% if month_filter %}&month={{ month_filter }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}" aria-label="Next">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'dashboard' %}" class="btn btn-link text-muted text-decoration-none small">
+        <i class="bi bi-arrow-left me-1"></i> Back to HR Dashboard
+    </a>
+</div>
+<script>
+document.getElementById('exportPdfBtn').addEventListener('click', function() {
+    const faculty = document.querySelector('input[name="faculty_query"]').value;
+    const dept = document.querySelector('select[name="dept"]').value;
+    const month = document.querySelector('select[name="month"]').value;
+    const year = document.querySelector('select[name="year"]').value;
+
+    let url = "{% url 'export_pdf' 'all' %}?";
+    url += `faculty_query=${encodeURIComponent(faculty)}&`;
+    url += `dept=${encodeURIComponent(dept)}&`;
+    url += `month=${encodeURIComponent(month)}&`;
+    url += `year=${encodeURIComponent(year)}`;
+
+    window.location.href = url;
+});
+</script>
+{% endblock %}
