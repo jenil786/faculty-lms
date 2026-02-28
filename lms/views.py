@@ -20,6 +20,7 @@ from django.db.models import FloatField
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.conf import settings
+from django.contrib.auth.models import User
 import pytz 
 
 import string #pass2
@@ -809,3 +810,20 @@ def export_leave_report_pdf(request, scope):
     print(f"DEBUG: Params received: {request.GET}")
     doc.build(elements)
     return response
+
+def forgot_password_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username') # The field name from your form
+        
+        # Check if the user exists in the database
+        user_exists = User.objects.filter(username=username).exists()
+        
+        if not user_exists:
+            # If user is NOT found, show an error message
+            messages.error(request, "This User ID does not exist in our system.")
+            return redirect('login')
+        
+        # ... (rest of your existing logic to save the request) ...
+        messages.success(request, "Your password reset request has been submitted successfully!")
+        return redirect('login')
+    

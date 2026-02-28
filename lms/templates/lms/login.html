@@ -185,16 +185,16 @@
 
 <div class="container p-3">
     {% if messages %}
-        <div class="mx-auto mb-3" style="max-width: 480px;">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {% for message in messages %}
+            {% if "password" in message.message|lower %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            {% endfor %}
-        </div>
+            {% endif %}
+        {% endfor %}
     {% endif %}
-    
     <div class="card login-card mx-auto">
         <div class="card-header">
             <div class="brand-logo-container">
