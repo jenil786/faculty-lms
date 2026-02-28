@@ -821,7 +821,7 @@ def forgot_password_view(request):
         
         if not user_exists:
             # If user is NOT found, show an error message
-            messages.error(request, "This User ID does not exist in our system.")
+            messages.error(request, "This User Name does not exist in our system.")
             return redirect('login')
         
         # ... (rest of your existing logic to save the request) ...
