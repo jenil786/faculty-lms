@@ -3,6 +3,7 @@ from django.utils import timezone
 from .models import LeaveRequest, LeaveBalance, PasswordRequest
 from django.db.models import Q
 from datetime import timedelta
+import holidays
 
 class LeaveRequestForm(forms.ModelForm):
     half_day = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={
@@ -46,6 +47,17 @@ class LeaveRequestForm(forms.ModelForm):
         is_half_day = cleaned_data.get('half_day')
         session = cleaned_data.get('session')
         
+        # --- [START] NEW HOLIDAY & SUNDAY CHECK ---
+        if from_date and to_date:
+            india_holidays = holidays.India()
+            curr_date = from_date
+            while curr_date <= to_date:
+                if curr_date.weekday() == 6:
+                    self.add_error('from_date', f"Sunday ({curr_date}) is a non-working day.")
+                if curr_date in india_holidays:
+                    self.add_error('from_date', f"{india_holidays.get(curr_date)} ({curr_date}) is a Public Holiday.")
+                curr_date += timedelta(days=1)
+        # --- [END] NEW HOLIDAY & SUNDAY CHECK ---
         if not from_date or not self.user:
             return cleaned_data
 

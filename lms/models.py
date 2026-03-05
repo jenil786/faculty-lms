@@ -10,7 +10,7 @@ from datetime import date, timedelta
 from django.db.models import Q
 from django.core.validators import RegexValidator, EmailValidator #pass1
 from django.template.response import TemplateResponse
-
+import holidays
 
 # =========================
 # Department Model
@@ -280,6 +280,22 @@ class LeaveRequest(models.Model):
     rejection_reason = models.TextField(null=True, blank=True)
 
     def clean(self):
+        # --- [START] NEW HOLIDAY & SUNDAY CHECK ---
+        if self.from_date and self.to_date:
+            india_holidays = holidays.India()
+            curr_date = self.from_date
+            while curr_date <= self.to_date:
+                # 6 is Sunday
+                if curr_date.weekday() == 6:
+                    raise ValidationError(f"Cannot apply for leave on a Sunday ({curr_date}).")
+                
+                # Check if the date is a public holiday
+                if curr_date in india_holidays:
+                    holiday_name = india_holidays.get(curr_date)
+                    raise ValidationError(f"Cannot apply for leave on a Public Holiday: {holiday_name} ({curr_date}).")
+                
+                curr_date += timedelta(days=1)
+        # --- [END] NEW HOLIDAY & SUNDAY CHECK ---
         # 1. Handle Half-Day Auto-fill (Locks TO_DATE to FROM_DATE)
         if self.half_day:
             if self.from_date:
